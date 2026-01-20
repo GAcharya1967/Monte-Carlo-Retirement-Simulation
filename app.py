@@ -3,12 +3,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
+import subprocess
 
 # =============================
 # Page Config
 # =============================
 st.set_page_config(layout="wide")
 st.sidebar.title("Monte Carlo Inputs")
+
+# =============================
+# Auto Version (Git Commit)
+# =============================
+def get_git_commit():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"]
+        ).decode("utf-8").strip()
+    except:
+        return "local"
+
+st.sidebar.caption(f"Build: {get_git_commit()}")
 
 # =============================
 # Helper
@@ -47,7 +61,7 @@ colC, colD = st.sidebar.columns(2)
 with colC:
     volatility = st.slider(
         "Return Volatility (%)",
-        5.0, 30.0, 15.0, 0.5
+        5.0, 30.0, 10.0, 0.5
     ) / 100.0
 
 with colD:
@@ -83,7 +97,7 @@ colE, colF = st.sidebar.columns(2)
 with colE:
     essential_spend = st.number_input(
         "Essential Spend (₹)",
-        value=3_000_000,
+        value=2_000_000,
         step=250_000
     )
     st.caption(f"→ {format_money(essential_spend)}")
@@ -91,7 +105,7 @@ with colE:
 with colF:
     discretionary_spend = st.number_input(
         "Discretionary Spend (₹)",
-        value=2_000_000,
+        value=1_000_000,
         step=250_000
     )
     st.caption(f"→ {format_money(discretionary_spend)}")
@@ -159,7 +173,6 @@ def run_monte_carlo():
 
         for yr in range(1, years + 1):
 
-            # Returns first (Excel-correct)
             if equity_wt == 0:
                 equity_r = 0.0
             else:
@@ -171,20 +184,16 @@ def run_monte_carlo():
             r = equity_wt * equity_r + debt_wt * DEBT_RETURN
             risky *= (1 + r)
 
-            # Inflation
             ess *= (1 + inflation)
             disc *= (1 + inflation)
 
-            # Taper
             if age >= taper_start_age:
                 ess *= (1 - taper_pct)
                 disc *= (1 - taper_pct)
 
-            # Discretionary cut in bad years
             disc_adj = disc * (1 - cut_pct) if r < 0 else disc
             total_draw = ess + disc_adj
 
-            # Safe bucket logic (no compounding)
             if yr <= safe_years and safe_bucket > 0:
                 draw = min(safe_bucket, total_draw)
                 safe_bucket -= draw
@@ -254,7 +263,7 @@ with col_pv:
     )
 
 # =============================
-# Plot (FIXED)
+# Plot
 # =============================
 fig, ax = plt.subplots(figsize=(10, 6))
 
