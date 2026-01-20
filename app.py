@@ -67,7 +67,7 @@ equity_pct = st.sidebar.slider(
 )
 
 debt_pct = 100 - equity_pct
-DEBT_RETURN = 0.04
+DEBT_RETURN = 0.03
 
 st.sidebar.caption(
     f"→ Equity: {equity_pct}% | Debt: {debt_pct}% (assumed 3% return)"
@@ -126,11 +126,11 @@ with st.sidebar.expander("🧓 Aging & Longevity", expanded=False):
 st.sidebar.subheader("Sequence Risk")
 
 force_sequence_risk = st.sidebar.toggle(
-    "Force 5-Year Sequence Risk",
+    "Force 3-Year Sequence Risk",
     value=False
 )
 
-SEQUENCE_YEARS = 5
+SEQUENCE_YEARS = 3
 
 # =============================
 # Simulation Settings
@@ -159,6 +159,7 @@ def run_monte_carlo():
 
         for yr in range(1, years + 1):
 
+            # Returns first (Excel-correct)
             if equity_wt == 0:
                 equity_r = 0.0
             else:
@@ -170,16 +171,20 @@ def run_monte_carlo():
             r = equity_wt * equity_r + debt_wt * DEBT_RETURN
             risky *= (1 + r)
 
+            # Inflation
             ess *= (1 + inflation)
             disc *= (1 + inflation)
 
+            # Taper
             if age >= taper_start_age:
                 ess *= (1 - taper_pct)
                 disc *= (1 - taper_pct)
 
+            # Discretionary cut in bad years
             disc_adj = disc * (1 - cut_pct) if r < 0 else disc
             total_draw = ess + disc_adj
 
+            # Safe bucket logic (no compounding)
             if yr <= safe_years and safe_bucket > 0:
                 draw = min(safe_bucket, total_draw)
                 safe_bucket -= draw
@@ -199,12 +204,12 @@ def run_monte_carlo():
     return pd.DataFrame(data)
 
 # =============================
-# Run
+# Run Simulation
 # =============================
 df = run_monte_carlo()
 
 # =============================
-# Stats
+# Statistics
 # =============================
 p10 = df.quantile(0.10, axis=1)
 p50 = df.quantile(0.50, axis=1)
@@ -249,7 +254,7 @@ with col_pv:
     )
 
 # =============================
-# Plot
+# Plot (FIXED)
 # =============================
 fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -279,4 +284,5 @@ ax.set_title(
 ax.legend()
 ax.grid(alpha=0.3)
 
-st.pyplot(fig)
+st.pyplot(fig, use_container_width=True)
+plt.close(fig)
