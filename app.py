@@ -312,7 +312,12 @@ if has_ruin:
     ax.axvline(x=earliest_ruin_yr, color="#ff6600", linewidth=1.2, linestyle="--", alpha=0.7)
 
 ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(x/1e7)} Cr"))
-ax.set_ylim(0, max(start_corpus * 8, p90.max()))
+
+# Cap Y axis at P75 at the midpoint of retirement — prevents long-horizon compounding
+# from collapsing the early/mid years into a flat line
+mid_yr = min(20, years)
+y_cap = max(start_corpus * 3, df.iloc[mid_yr].quantile(0.75) * 2)
+ax.set_ylim(0, y_cap)
 
 # X-axis: show age instead of years
 x_ticks = range(0, years + 1, 5)
