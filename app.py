@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
-import subprocess
 
 # =============================
 # Page Config
@@ -12,20 +11,7 @@ st.set_page_config(layout="wide")
 st.sidebar.title("Monte Carlo Inputs")
 
 # =============================
-# Auto Version (Git Commit)
-# =============================
-def get_git_commit():
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"]
-        ).decode("utf-8").strip()
-    except:
-        return "local"
-
-st.sidebar.caption(f"Build: {get_git_commit()}")
-
-# =============================
-# Helper
+# Helper: Money formatter
 # =============================
 def format_money(x):
     if x >= 1e7:
@@ -46,6 +32,7 @@ with colA:
     start_corpus = st.number_input(
         "Total Corpus (₹)",
         value=100_000_000,
+        min_value=0,
         step=5_000_000
     )
     st.caption(f"→ {format_money(start_corpus)}")
@@ -61,7 +48,7 @@ colC, colD = st.sidebar.columns(2)
 with colC:
     volatility = st.slider(
         "Return Volatility (%)",
-        5.0, 30.0, 10.0, 0.5
+        5.0, 30.0, 15.0, 0.5
     ) / 100.0
 
 with colD:
@@ -81,10 +68,10 @@ equity_pct = st.sidebar.slider(
 )
 
 debt_pct = 100 - equity_pct
-DEBT_RETURN = 0.03
+DEBT_RETURN = 0.04
 
 st.sidebar.caption(
-    f"→ Equity: {equity_pct}% | Debt: {debt_pct}% (assumed 3% return)"
+    f"→ Equity: {equity_pct}% | Debt: {debt_pct}% (assumed 4% return)"
 )
 
 # =============================
@@ -97,7 +84,8 @@ colE, colF = st.sidebar.columns(2)
 with colE:
     essential_spend = st.number_input(
         "Essential Spend (₹)",
-        value=2_000_000,
+        value=3_000_000,
+        min_value=0,
         step=250_000
     )
     st.caption(f"→ {format_money(essential_spend)}")
@@ -105,7 +93,8 @@ with colE:
 with colF:
     discretionary_spend = st.number_input(
         "Discretionary Spend (₹)",
-        value=1_000_000,
+        value=2_000_000,
+        min_value=0,
         step=250_000
     )
     st.caption(f"→ {format_money(discretionary_spend)}")
@@ -123,10 +112,10 @@ with st.sidebar.expander("🛡️ Risk Protection", expanded=False):
     cut_pct = st.slider("Discretionary Cut in Bad Years (%)", 0, 60, 30) / 100.0
 
 # =============================
-# Aging
+# Aging & Longevity
 # =============================
 with st.sidebar.expander("🧓 Aging & Longevity", expanded=False):
-    current_age = st.number_input("Current Age", value=60)
+    current_age = st.number_input("Current Age", value=60, min_value=1, max_value=100)
 
     colG, colH = st.columns(2)
     with colG:
@@ -140,11 +129,11 @@ with st.sidebar.expander("🧓 Aging & Longevity", expanded=False):
 st.sidebar.subheader("Sequence Risk")
 
 force_sequence_risk = st.sidebar.toggle(
-    "Force 3-Year Sequence Risk",
+    "Force 5-Year Sequence Risk",
     value=False
 )
 
-SEQUENCE_YEARS = 3
+SEQUENCE_YEARS = 5
 
 # =============================
 # Simulation Settings
@@ -157,12 +146,13 @@ SIMS = 50_000
 def run_monte_carlo():
     data = np.zeros((years + 1, SIMS))
 
-    equity_wt = equity_pct / 100.0
-    debt_wt = 1.0 - equity_wt
+    equity_weight = equity_pct / 100.0
+    debt_weight = 1.0 - equity_weight
+    debt_return = DEBT_RETURN
 
     for sim in range(SIMS):
-        annual_spend = essential_spend + discretionary_spend
-        safe_bucket = safe_years * annual_spend
+        total_spend = essential_spend + discretionary_spend
+        safe_bucket = safe_years * total_spend
         risky = max(0, start_corpus - safe_bucket)
 
         ess = essential_spend
@@ -173,28 +163,38 @@ def run_monte_carlo():
 
         for yr in range(1, years + 1):
 
-            if equity_wt == 0:
+            # ---- Equity return ----
+            if equity_weight == 0:
                 equity_r = 0.0
             else:
                 if force_sequence_risk and yr <= SEQUENCE_YEARS:
-                    equity_r = min(np.random.normal(-0.10, 0.05), 0.0)
+                    equity_r = np.random.normal(-0.10, 0.05)
+                    equity_r = min(equity_r, 0.0)
                 else:
                     equity_r = np.random.normal(expected_return, volatility)
 
-            r = equity_wt * equity_r + debt_wt * DEBT_RETURN
+            # ---- Portfolio return ----
+            r = equity_weight * equity_r + debt_weight * debt_return
+
+            # Apply return FIRST (Excel-consistent)
             risky *= (1 + r)
 
+            # Inflate spending
             ess *= (1 + inflation)
             disc *= (1 + inflation)
 
+            # Taper spending
             if age >= taper_start_age:
                 ess *= (1 - taper_pct)
                 disc *= (1 - taper_pct)
 
+            # Discretionary cut
             disc_adj = disc * (1 - cut_pct) if r < 0 else disc
             total_draw = ess + disc_adj
 
+            # Withdrawals
             if yr <= safe_years and safe_bucket > 0:
+                safe_bucket *= (1 + debt_return)
                 draw = min(safe_bucket, total_draw)
                 safe_bucket -= draw
                 risky -= (total_draw - draw)
@@ -218,38 +218,38 @@ def run_monte_carlo():
 df = run_monte_carlo()
 
 # =============================
-# Statistics
+# Statistics (FIXED AXIS)
 # =============================
 p10 = df.quantile(0.10, axis=1)
 p50 = df.quantile(0.50, axis=1)
 p90 = df.quantile(0.90, axis=1)
 
-success_rate = (df.iloc[-1] > 0).mean()
+# Success = never hits zero
+success_rate = (df.min(axis=0) > 0).mean()
 
-terminal_median = p50.iloc[-1]
-pv_terminal_median = (
-    0 if terminal_median <= 0
-    else terminal_median / ((1 + inflation) ** years)
-)
+# =============================
+# Median PV
+# =============================
+terminal_median = np.median(df.iloc[-1].clip(lower=0))
+pv_terminal_median = 0 if terminal_median <= 0 else terminal_median / ((1 + inflation) ** years)
 
 # =============================
 # Header Boxes
 # =============================
 col_succ, col_pv = st.columns([1, 1])
 
-if success_rate >= 0.75:
-    succ_bg, succ_fg = "#22c55e", "black"
-elif success_rate >= 0.50:
-    succ_bg, succ_fg = "#facc15", "black"
-else:
-    succ_bg, succ_fg = "#ef4444", "white"
+succ_bg, succ_fg = (
+    ("#22c55e", "black") if success_rate >= 0.75 else
+    ("#facc15", "black") if success_rate >= 0.50 else
+    ("#ef4444", "white")
+)
 
 pv_bg, pv_fg = ("#22c55e", "black") if pv_terminal_median > 0 else ("#ef4444", "white")
 
 with col_succ:
     st.markdown(
         f"""<div style="background:{succ_bg};color:{succ_fg};
-        padding:8px 16px;border-radius:8px;font-size:16px;font-weight:500;width:fit-content;">
+        padding:10px 18px;border-radius:8px;font-size:20px;font-weight:600;width:fit-content;">
         Success {success_rate*100:.1f}%</div>""",
         unsafe_allow_html=True
     )
@@ -257,41 +257,84 @@ with col_succ:
 with col_pv:
     st.markdown(
         f"""<div style="float:right;background:{pv_bg};color:{pv_fg};
-        padding:8px 16px;border-radius:8px;font-size:16px;font-weight:500;">
+        padding:10px 18px;border-radius:8px;font-size:18px;font-weight:600;">
         Median PV {format_money(pv_terminal_median)}</div>""",
         unsafe_allow_html=True
     )
+
+# =============================
+# Earliest Ruin Path
+# =============================
+# Find which simulation hits zero earliest
+def first_ruin_year(series):
+    zeros = np.where(series.values <= 0)[0]
+    return zeros[0] if len(zeros) > 0 else len(series)
+
+ruin_by_sim = df.apply(first_ruin_year, axis=0)
+earliest_ruin_sim = ruin_by_sim.idxmin()
+earliest_ruin_yr = ruin_by_sim.min()
+has_ruin = earliest_ruin_yr < years  # at least one sim actually hit zero
 
 # =============================
 # Plot
 # =============================
 fig, ax = plt.subplots(figsize=(10, 6))
 
-for col in df.columns[:300]:
-    ax.plot(df[col], color="#7ec8e3", alpha=0.18, linewidth=0.5)
+for col in df.columns[:200]:
+    # Skip the worst path — it gets its own highlight below
+    if col == earliest_ruin_sim:
+        continue
+    ax.plot(df[col], color="#7ec8e3", alpha=0.18, linewidth=0.6)
 
-ax.fill_between(range(len(p10)), p10, p90, alpha=0.22, label="10–90 percentile")
+ax.fill_between(range(len(p10)), p10, p90, alpha=0.25, label="10–90 percentile")
 ax.plot(p50, linewidth=3, label="Median")
-ax.scatter(0, start_corpus, color="red", s=70, label="Start")
+ax.scatter(0, start_corpus, color="red", s=80, label="Start")
+
+# ---- Highlight the single earliest-ruin path ----
+if has_ruin:
+    worst_path = df[earliest_ruin_sim]
+    ruin_age = int(current_age) + earliest_ruin_yr
+    ax.plot(
+        worst_path,
+        color="#ff6600",
+        linewidth=2.0,
+        zorder=5,
+        label=f"Earliest Ruin (Age {ruin_age})"
+    )
+    ax.scatter(
+        earliest_ruin_yr,
+        0,
+        color="#ff6600",
+        s=100,
+        zorder=6,
+        marker="X"
+    )
+    ax.axvline(x=earliest_ruin_yr, color="#ff6600", linewidth=1.2, linestyle="--", alpha=0.7)
 
 ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(x/1e7)} Cr"))
-ax.set_ylim(0, max(start_corpus * 6, p90.max()))
+ax.set_ylim(0, max(start_corpus * 8, p90.max()))
+
+# X-axis: show age instead of years
+x_ticks = range(0, years + 1, 5)
+ax.set_xticks(list(x_ticks))
+ax.set_xticklabels([int(current_age) + yr for yr in x_ticks])
+ax.set_xlabel("Age")
 
 seq_label = "ON" if force_sequence_risk else "OFF"
 
 if equity_pct == 0:
-    return_label = f"Return {DEBT_RETURN*100:.1f}% (Debt)"
+    return_label = "Return 4.0% (Debt)"
 else:
     return_label = f"Return {expected_return*100:.1f}%"
 
 ax.set_title(
     f"Corpus {format_money(start_corpus)} | "
     f"Ess {format_money(essential_spend)} + Disc {format_money(discretionary_spend)} | "
-    f"{return_label} | Infl {inflation*100:.1f}% | Seq Risk {seq_label}"
+    f"{return_label} | Infl {inflation*100:.1f}% | "
+    f"Seq Risk {seq_label}"
 )
 
 ax.legend()
 ax.grid(alpha=0.3)
 
-st.pyplot(fig, use_container_width=True)
-plt.close(fig)
+st.pyplot(fig)
