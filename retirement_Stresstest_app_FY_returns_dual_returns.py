@@ -557,7 +557,7 @@ html, body, [class*="css"] { font-family: 'Inter', 'Segoe UI', Helvetica, Arial,
 .st-key-country, .st-key-method, .st-key-country [data-testid="stRadio"], .st-key-method [data-testid="stRadio"] { width: 100% !important; }
 .st-key-country [data-testid="stRadio"] > div:last-child, .st-key-method [data-testid="stRadio"] > div:last-child { width: 100% !important; }
 .st-key-country [role="radiogroup"] {
-  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #E6EBF3; padding: 3px; border-radius: 10px; width: 100%; }
+  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #F0FDF4; padding: 3px; border-radius: 10px; width: 100%; }
 .st-key-country [role="radiogroup"] > div, .st-key-country [role="radiogroup"] > label { flex: 1 1 0; min-width: 0; }
 .st-key-country [role="radiogroup"] label {
   width: 100%; box-sizing: border-box; justify-content: center; margin: 0 !important; padding: .45rem .1rem; border-radius: 8px;
@@ -568,11 +568,14 @@ html, body, [class*="css"] { font-family: 'Inter', 'Segoe UI', Helvetica, Arial,
 .st-key-country [role="radiogroup"] label p {
   font-size: .78rem !important; font-weight: 500 !important; color: #5B6B82 !important; text-align: center; margin: 0; white-space: nowrap; }
 .st-key-country [role="radiogroup"] label:hover { background: rgba(255,255,255,.55); }
-.st-key-country [role="radiogroup"] label:has(input:checked) {
-  background: #FFFFFF; box-shadow: 0 1px 3px rgba(30,41,59,.16), 0 0 0 1px rgba(79,111,159,.18); }
-.st-key-country [role="radiogroup"] label:has(input:checked) p { color: var(--accent) !important; font-weight: 600 !important; }
+.st-key-country [role="radiogroup"] label:has(input:checked),
+.st-key-country [role="radiogroup"] label[data-testid="stRadioOption"]:has(input:checked),
+.st-key-country [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {
+  background: #DCFCE7 !important; border: 1px solid #16A34A !important;
+  box-shadow: 0 1px 3px rgba(22,163,74,.16); }
+.st-key-country [role="radiogroup"] label:has(input:checked) p { color: #166534 !important; font-weight: 600 !important; }
 .st-key-method [role="radiogroup"] {
-  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #E6EBF3; padding: 3px; border-radius: 10px; width: 100%; }
+  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #F0FDF4; padding: 3px; border-radius: 10px; width: 100%; }
 .st-key-method [role="radiogroup"] > div, .st-key-method [role="radiogroup"] > label { flex: 1 1 0; min-width: 0; }
 .st-key-method [role="radiogroup"] label {
   width: 100%; box-sizing: border-box; justify-content: center; margin: 0 !important; padding: .45rem .1rem; border-radius: 8px;
@@ -583,9 +586,12 @@ html, body, [class*="css"] { font-family: 'Inter', 'Segoe UI', Helvetica, Arial,
 .st-key-method [role="radiogroup"] label p {
   font-size: .78rem !important; font-weight: 500 !important; color: #5B6B82 !important; text-align: center; margin: 0; white-space: nowrap; }
 .st-key-method [role="radiogroup"] label:hover { background: rgba(255,255,255,.55); }
-.st-key-method [role="radiogroup"] label:has(input:checked) {
-  background: #FFFFFF; box-shadow: 0 1px 3px rgba(30,41,59,.16), 0 0 0 1px rgba(79,111,159,.18); }
-.st-key-method [role="radiogroup"] label:has(input:checked) p { color: var(--accent) !important; font-weight: 600 !important; }
+.st-key-method [role="radiogroup"] label:has(input:checked),
+.st-key-method [role="radiogroup"] label[data-testid="stRadioOption"]:has(input:checked),
+.st-key-method [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {
+  background: #DCFCE7 !important; border: 1px solid #16A34A !important;
+  box-shadow: 0 1px 3px rgba(22,163,74,.16); }
+.st-key-method [role="radiogroup"] label:has(input:checked) p { color: #166534 !important; font-weight: 600 !important; }
 .rule-events { max-height: 420px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; background: #FFFFFF; }
 .rule-events table { width: 100%; border-collapse: collapse; margin: 0; table-layout: auto; }
 .rule-events th, .rule-events td { padding: .5rem .5rem; border: none; border-bottom: 1px solid var(--line);
