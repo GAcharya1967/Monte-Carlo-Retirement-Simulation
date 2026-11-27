@@ -459,6 +459,17 @@ def draw_chart(results, corpus, country):
 
 if True:
     st.set_page_config(page_title="Retirement Stress Test", layout="wide")
+    # Lock the light theme: the page colours are written for a light background, so Streamlit's automatic dark theme makes it
+    # unreadable. The theme is chosen when a browser session starts, so the first session after the server starts
+    # reloads once (about a second); every later session starts light.
+    try:
+        if st._config.get_option("theme.base") != "light":
+            st._config.set_option("theme.base", "light")
+            import streamlit.components.v1 as components
+            components.html("<script>window.parent.location.reload();</script>", height=0)
+            st.stop()
+    except Exception:
+        pass
     st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 :root {
@@ -557,41 +568,36 @@ html, body, [class*="css"] { font-family: 'Inter', 'Segoe UI', Helvetica, Arial,
 .st-key-country, .st-key-method, .st-key-country [data-testid="stRadio"], .st-key-method [data-testid="stRadio"] { width: 100% !important; }
 .st-key-country [data-testid="stRadio"] > div:last-child, .st-key-method [data-testid="stRadio"] > div:last-child { width: 100% !important; }
 .st-key-country [role="radiogroup"] {
-  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #F0FDF4; padding: 3px; border-radius: 10px; width: 100%; }
+  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #E6EBF3; padding: 2px; border-radius: 9px; width: 100%; }
 .st-key-country [role="radiogroup"] > div, .st-key-country [role="radiogroup"] > label { flex: 1 1 0; min-width: 0; }
 .st-key-country [role="radiogroup"] label {
-  width: 100%; box-sizing: border-box; justify-content: center; margin: 0 !important; padding: .45rem .1rem; border-radius: 8px;
+  width: 100%; box-sizing: border-box; justify-content: center; margin: 0 !important; padding: .22rem .1rem; border-radius: 7px; position: relative; gap: 0 !important;
   cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease; }
 .st-key-country [role="radiogroup"] label > div:first-child:not(:has([data-testid="stMarkdownContainer"])),
 .st-key-country [role="radiogroup"] label > div > div:first-child:not([data-testid="stMarkdownContainer"]) { display: none !important; }
 .st-key-country [role="radiogroup"] label > div:last-child { justify-content: center; width: 100%; }
+.st-key-country [role="radiogroup"] label > span, .st-key-method [role="radiogroup"] label > span { position: absolute; opacity: 0; width: 0; height: 0; overflow: hidden; }
 .st-key-country [role="radiogroup"] label p {
-  font-size: .78rem !important; font-weight: 500 !important; color: #5B6B82 !important; text-align: center; margin: 0; white-space: nowrap; }
-.st-key-country [role="radiogroup"] label:hover { background: rgba(255,255,255,.55); }
-.st-key-country [role="radiogroup"] label:has(input:checked),
-.st-key-country [role="radiogroup"] label[data-testid="stRadioOption"]:has(input:checked),
-.st-key-country [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {
-  background: #DCFCE7 !important; border: 1px solid #16A34A !important;
-  box-shadow: 0 1px 3px rgba(22,163,74,.16); }
-.st-key-country [role="radiogroup"] label:has(input:checked) p { color: #166534 !important; font-weight: 600 !important; }
+  font-size: .975rem !important; font-weight: 400 !important; color: #475569 !important; text-align: center; margin: 0; white-space: nowrap; }
+.st-key-country [role="radiogroup"] label:hover { background: rgba(255,255,255,.7); }
+.st-key-country [role="radiogroup"] label:has(input:checked) {
+  background: #DCFCE7; box-shadow: 0 0 0 1px #16A34A inset; }
+.st-key-country [role="radiogroup"] label:has(input:checked) p { color: #111827 !important; font-weight: 400 !important; }
 .st-key-method [role="radiogroup"] {
-  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #F0FDF4; padding: 3px; border-radius: 10px; width: 100%; }
-.st-key-method [role="radiogroup"] > div, .st-key-method [role="radiogroup"] > label { flex: 1 1 0; min-width: 0; }
+  display: flex !important; flex-wrap: nowrap !important; gap: 2px; background: #E6EBF3; padding: 2px; border-radius: 9px; width: 100%; }
+.st-key-method [role="radiogroup"] > div, .st-key-method [role="radiogroup"] > label { flex: 1 1 auto; min-width: 0; }
 .st-key-method [role="radiogroup"] label {
-  width: 100%; box-sizing: border-box; justify-content: center; margin: 0 !important; padding: .45rem .1rem; border-radius: 8px;
+  width: 100%; box-sizing: border-box; justify-content: center; margin: 0 !important; padding: .22rem .1rem; border-radius: 7px; position: relative; gap: 0 !important;
   cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease; }
 .st-key-method [role="radiogroup"] label > div:first-child:not(:has([data-testid="stMarkdownContainer"])),
 .st-key-method [role="radiogroup"] label > div > div:first-child:not([data-testid="stMarkdownContainer"]) { display: none !important; }
 .st-key-method [role="radiogroup"] label > div:last-child { justify-content: center; width: 100%; }
 .st-key-method [role="radiogroup"] label p {
-  font-size: .78rem !important; font-weight: 500 !important; color: #5B6B82 !important; text-align: center; margin: 0; white-space: nowrap; }
+  font-size: .975rem !important; font-weight: 400 !important; color: #475569 !important; text-align: center; margin: 0; white-space: nowrap; }
 .st-key-method [role="radiogroup"] label:hover { background: rgba(255,255,255,.55); }
-.st-key-method [role="radiogroup"] label:has(input:checked),
-.st-key-method [role="radiogroup"] label[data-testid="stRadioOption"]:has(input:checked),
-.st-key-method [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {
-  background: #DCFCE7 !important; border: 1px solid #16A34A !important;
-  box-shadow: 0 1px 3px rgba(22,163,74,.16); }
-.st-key-method [role="radiogroup"] label:has(input:checked) p { color: #166534 !important; font-weight: 600 !important; }
+.st-key-method [role="radiogroup"] label:has(input:checked) {
+  background: #DCFCE7; box-shadow: 0 0 0 1px #16A34A inset; }
+.st-key-method [role="radiogroup"] label:has(input:checked) p { color: #111827 !important; font-weight: 400 !important; }
 .rule-events { max-height: 420px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; background: #FFFFFF; }
 .rule-events table { width: 100%; border-collapse: collapse; margin: 0; table-layout: auto; }
 .rule-events th, .rule-events td { padding: .5rem .5rem; border: none; border-bottom: 1px solid var(--line);
