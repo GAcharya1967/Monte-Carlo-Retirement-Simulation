@@ -1192,7 +1192,7 @@ SIM_OPTIONS = [1000, 5000, 10000, 25000, 50000, 100000]
 # Default value of every input. Inputs live in st.session_state, so a value is kept even while its
 # section is not on screen (only one sidebar section is shown at a time).
 DEFAULTS = {
-    "corpus_cr": 5.0, "years": 50,
+    "corpus_cr": 5.0, "years": 40,
     "essential_l": 12.0, "discretionary_l": 6.0, "medical_separate": "Yes",
     "medical_l": 3.0, "medical_premium_pct": 3.0,
     "taper_age": 80, "taper_pct": 2.0, "taper_essential": True, "taper_discretionary": True,
@@ -1331,7 +1331,7 @@ def render_sidebar(show_gk: bool) -> None:
             _mc_slider_css()
             with st.container(key="mc_cs"):
                 _exact_slider("Starting corpus", "corpus_cr", CORPUS_OPTS_MC, _fmt_cr_l)
-            st.number_input("Retirement duration (years)", min_value=1, max_value=100, step=1, key="years")
+            st.radio("Retirement duration (years)", [30, 40, 50], format_func=lambda years: f"{years}yr", horizontal=True, key="years")
             st.caption(f"Ages in the charts assume retirement starts at age {START_AGE}.")
 
         elif choice == "Spend":
